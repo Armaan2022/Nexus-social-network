@@ -1,6 +1,9 @@
-# [NEXUS - Social Distribution App]
+# [NEXUS - Distributed Social Networking System]
+Nexus is a lightweight, decentralized social networking platform. It enables users on independent servers (nodes) to interact seamlessly through posts, likes, comments, and follows — all without relying on a centralized provider like Facebook or Twitter.
 
-This is a social networking application built for the CMPUT 404 course at the University of Alberta. The project supports user identity, posting, reading content, visibility controls, and more, following the course specifications.
+Each user operates on a node, and the platform uses an inbox-based model to deliver content and interactions across the network. Public, unlisted, and friends-only posts can be created and shared, with appropriate visibility rules applied. When a user follows someone on another node, their content is aggregated into the local stream, allowing cross-node social interaction.
+
+This system demonstrates the core mechanics of federated social media while maintaining simplicity suitable for educational and prototype purposes.
 
 ## 🚀 Features
 
