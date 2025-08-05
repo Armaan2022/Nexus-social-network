@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load markdownify %}
+{% load custom_filters %}
+
+{% block content %}
+<h2 class="mb-4 mx-1">My Posts</h2>
+
+<!-- Template Post -->
+{% for post, id in posts %}
+    <div class="card mb-4 p-3 post-card">
+        
+        <div class="card-body">
+            <!-- Edit & Delete Buttons (Top Right) -->
+            <div class="position-absolute top-0 end-0 m-4">
+                <a href="{% url 'edit_post' post_id=post.id %}" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <form action="{% url 'delete_post' post_id=post.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this post?');" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+                
+                {% if post.author.profile_image_url %}
+                    <img src="{{ post.author.profile_image_url }}" 
+                    alt="User" 
+                    class="post-img me-3 rounded-circle"
+                    onerror="this.src='https://35bff.yeg.rac.sh/static/images/default-profile.png'; this.onerror='';">
+                {% else %}
+                    <img src="{% static 'images/default-profile.png' %}" alt="User" class="post-img me-3 rounded-circle">
+                {% endif %}
+                <div>
+                    <h5 class="mb-0 fw-bold">{{ post.author.display_name }}</h5>
+                    <small class="text-muted">{{ post.published }}</small>
+                </div>
+            </div>
+            <h5 class="post-title"><a href="{% url 'single_post' post.id %}" class="text-decoration-none">{{ post.title }}</a></h5>
+            
+            <div class="post-content">
+                {% if post.contentType in "image/png;base64,image/jpeg;base64,application/base64" %}
+                    {% if post.content|slice:":6" == "/media" or post.content|slice:":5" == "media" %}
+                        <!-- Direct file path to image -->
+                        <img src="{{ post.content }}" class="img-fluid rounded shadow-sm w-50">
+                    {% else %}
+                        <!-- Base64 encoded image -->
+                        <img src="data:{{ post.contentType|cut:';base64' }};base64,{{ post.content }}" class="img-fluid rounded shadow-sm w-50">
+                    {% endif %}
+                {% elif post.contentType in "video/mp4,video/avi,video/mov" %}
+                    <video width="400" controls>
+                        <source src="{{ post.video.url }}" type="{{ post.contentType }}">
+                        Your browser does not support the video tag.
+                    </video>
+                    
+                {% elif post.contentType == "text/markdown" %}
+                        
+                    <!-- Render markdown content first -->
+                    <div class="markdown-content">{{ post.content|markdownify|safe }}</div>
+                    
+                    <!-- Also extract and display images directly -->
+                    {% if "![" in post.content and "](" in post.content %}
+                        <div class="extracted-images mt-3">
+                            {% for line in post.content.split %}
+                                {% if "![" in line and "](" in line %}
+                                    {% with url_part=line|split:"](" %}
+                                        {% with img_url=url_part.1|cut:")" %}
+                                            <!-- Still include the image attempt -->
+                                            <img src="{% url 'proxy_image' url=img_url|urlencode %}" class="img-fluid rounded shadow-sm w-50">
+                                        {% endwith %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                {% else %}
+                    <p class="text-muted">{{ post.content|truncatewords:30|safe }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Social Media Buttons -->
+        <div class="d-flex justify-content-between align-items-center mt-3 ms-3">
+            <div class="d-flex gap-2">
+                <!-- Like Button -->
+                <form method="post" action="{% url 'like_item' item_uuid=post.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-hand-thumbs-up"></i> Like <span class="badge" style="background-color: #5dade2; color: white;">{{ post.likes.all.count }}</span>
+                    </button>
+                </form>
+
+                <!-- Comment Button -->
+                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#commentModal-{{ post.id }}">
+                    <i class="bi bi-chat"></i> Comment <span class="badge" style="background-color: #121265; color: white;">{{ post.post_comments.all.count }}</span>
+                </button>
+
+                <!-- Share Button -->
+                <button class="btn btn-secondary btn-sm">
+                    <i class="bi bi-share"></i> Share
+                </button>
+            </div>
+
+            <!-- Visibility Tag -->
+            <span class="badge bg-dark">{{ post.visibility }}</span>
+        </div>
+    </div>
+
+<!-- Include the comments modal for this post -->
+{% include 'comments.html' with post=post %}
+
+{% empty %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <p>No posts to display.</p>
+        </div>
+    </div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <!-- Search Form -->
+    <form action="{% url 'search_authors' %}" method="get" class="mb-3">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="q" class="form-control" 
+                       placeholder="Search by name or username" 
+                       aria-label="Search" value="{{ query|default:'' }}">
+            </div>
+            <div class="col-md-4">
+                <select name="host" class="form-control">
+                    <option value="">All Hosts</option>
+                    {% for host_option in available_hosts %}
+                        <option value="{{ host_option.value }}" {% if selected_host == host_option.value %}selected{% endif %}>
+                            {{ host_option.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit">Search</button>
+            </div>
+        </div>
+    </form>
+    
+    <!-- Search Results -->
+    <h2 class="mb-4 mx-1">Search Results</h2>
+    
+    {% if authors %}
+        {% for author in authors %}
+        <div class="card post-card mb-4 p-3">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <img src="{% if author.profile_image_url %}{{ author.profile_image_url }}{% else %}https://35bff.yeg.rac.sh/static/images/default-profile.png{% endif %}" 
+                        alt="{{ author.display_name }}" 
+                        class="post-img me-3 rounded-circle"
+                        onerror="this.src='https://35bff.yeg.rac.sh/static/images/default-profile.png'; this.onerror='';">
+
+                        <div class="flex-grow-1">
+                            <a href="{% url 'author_profile' id=author.id %}" class="text-decoration-none text-dark">
+                                <h5 class="mb-0 fw-bold">{{ author.display_name|default:"Unnamed Author" }}</h5>
+                            </a>
+                            {% if author.user %}
+                                <small class="text-muted">
+                                    Joined: {{ author.user.date_joined|date:"F j, Y" }}
+                                </small>
+                            {% else %}
+                                <small class="text-muted">
+                                    Remote Author
+                                </small>
+                            {% endif %}
+                        </div>
+                    <div>
+                        <a href="{% url 'author_profile' id=author.id %}" class="btn btn-primary">View Profile</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        {% if query %}
+            <p>No authors found matching "{{ query }}".</p>
+        {% else %}
+            <p>Enter a search term to find authors.</p>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

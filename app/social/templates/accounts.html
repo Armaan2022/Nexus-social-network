@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container">
+    {% if request.user.is_superuser %}
+        <h2 class="mb-4">Account Approval Settings</h2>
+        <div class="card p-4 mb-4">
+            <form method="post" action="{% url 'toggle_approval' %}" class="d-flex align-items-center justify-content-between">
+                {% csrf_token %}
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" name="require_approval" id="requireApproval" 
+                        {% if approval_setting.require_approval %}checked{% endif %}>
+                    <label class="form-check-label ms-4" for="requireApproval">
+                        Require admin approval for new users
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </form>
+        </div>
+        
+        <h2 class="mb-4">Pending Users</h2>
+        {% if pending_authors %}
+            {% for author in pending_authors %}
+                <div class="card post-card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h5 class="mb-0 fw-bold">{{ author.display_name }}</h5>
+                            </div>
+                            <div>
+                                <form method="post" action="{% url 'approve_user' author.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success me-2">Approve</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No pending users.</p>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% endblock %}

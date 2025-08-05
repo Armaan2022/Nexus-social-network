@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load markdownify %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="card mb-4 p-3 post-card">
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+            {% if post.author.profile_image_url %}
+                <img src="{{ post.author.profile_image_url }}" 
+                alt="User" 
+                class="post-img me-3 rounded-circle"
+                onerror="this.src='https://35bff.yeg.rac.sh/static/images/default-profile.png'; this.onerror='';">
+            {% else %}
+                <img src="{% static 'images/default-profile.png' %}" 
+                alt="User" 
+                class="post-img me-3 rounded-circle">
+            {% endif %}
+            <div>
+                <h5 class="mb-0 fw-bold">{{ post.author.display_name }}</h5>
+                <small class="text-muted">{{ post.published }}</small>
+            </div>
+        </div>
+        <h5 class="post-title">{{ post.title }}</h5>
+        
+        <div class="post-content">
+            {% if post.contentType in "video/mp4,video/avi,video/mov" %}
+                <video width="400" controls>
+                    <source src="{{ post.video.url }}" type="{{ post.contentType }}">
+                    Your browser does not support the video tag.
+                </video>
+            {% elif post.contentType in "image/png;base64,image/jpeg;base64,application/base64" %}
+                {% if post.content|slice:":6" == "/media" or post.content|slice:":5" == "media" %}
+                    <!-- Direct file path to image -->
+                    <img src="{{ post.content }}" class="img-fluid rounded shadow-sm w-50">
+                {% else %}
+                    <!-- Base64 encoded image -->
+                    <img src="data:{{ post.contentType|cut:';base64' }};base64,{{ post.content }}" class="img-fluid rounded shadow-sm w-50">
+                {% endif %}
+            {% elif post.contentType == "text/markdown" %}
+                
+                <!-- Render markdown content first -->
+                <div class="markdown-content">{{ post.content|markdownify|safe }}</div>
+                
+                <!-- Also extract and display images directly -->
+                {% if "![" in post.content and "](" in post.content %}
+                    <div class="extracted-images mt-3">
+                        {% for line in post.content.split %}
+                            {% if "![" in line and "](" in line %}
+                                {% with url_part=line|split:"](" %}
+                                    {% with img_url=url_part.1|cut:")" %}
+                                        <!-- Still include the image attempt -->
+                                        <img src="{% url 'proxy_image' url=img_url|urlencode %}" class="img-fluid rounded shadow-sm w-50">
+                                    {% endwith %}
+                                {% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+            {% else %}
+                <p class="text-muted">{{ post.content|truncatewords:30|safe }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Social Media Buttons -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="d-flex gap-2">
+                <!-- Like Button -->
+                <form method="post" action="{% url 'like_item' item_uuid=post.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-hand-thumbs-up"></i> Like <span class="badge" style="background-color: #5dade2; color: white;">{{ post.like_count }}</span>
+                    </button>
+                </form>
+
+                <!-- Comment Button -->
+                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#commentModal-{{ post.id }}">
+                    <i class="bi bi-chat"></i> Comment
+                </button>
+
+                <!-- Share Button -->
+                {% if post.visibility == "PUBLIC" or post.visibility == "UNLISTED" %}
+                <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('{{ request.scheme }}://{{ request.get_host }}/post/{{ post.id }}/')">
+                    <i class="bi bi-share"></i> Share
+                </button>
+                {% endif %}
+                <script>
+                function copyToClipboard(text) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert("Link copied to clipboard!");
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                    });
+                }
+                </script>
+            </div>
+
+            <!-- Visibility Tag -->
+            <span class="badge bg-dark">{{ post.visibility }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="comments-section mt-5">
+    <h5 class="fw-bold mb-3">Comments</h5>
+
+    <div class="comments-list p-3 bg-light rounded shadow-sm">
+        {% for comment in post.post_comments.all %}
+            <div class="card mb-3 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        {% if comment.author.profile_image_url %}
+                            <img src="{{ comment.author.profile_image_url }}" 
+                                alt="{{ comment.author.display_name }}" 
+                                class="comment-img me-2"
+                                onerror="this.src='https://35bff.yeg.rac.sh/static/images/default-profile.png'; this.onerror='';">
+                        {% else %}
+                            <img src="{% static 'images/default-profile.png' %}" 
+                                alt="{{ comment.author.display_name }}" 
+                                class="comment-img me-2">
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-0 fw-bold">{{ comment.author.display_name }}</h6>
+                            <small class="text-muted">{{ comment.published|date:"F j, Y, g:i a" }}</small>
+                        </div>
+                    </div>
+                    <!-- Render Markdown if content_type is text/markdown -->
+                    <div class="mt-2">
+                        {% if comment.content_type == 'text/markdown' %}
+                            <div class="markdown-content">{{ comment.comment|markdownify }}</div>
+                        {% else %}
+                            <p class="mb-1">{{ comment.comment }}</p>
+                        {% endif %}
+                    </div>
+                    <!-- Like Comment Button -->
+                    <div class="mt-2">
+                        <form class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-hand-thumbs-up"></i> {{ comment.like_count }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-3">
+                <p>No comments yet. Be the first to comment!</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-4 p-3 text-white shadow-sm" style="border-radius: 40px; background-color: darkgray;">
+        <form method="post" action="{% url 'add_comment' post_id=post.id %}" class="d-flex">
+            {% csrf_token %}
+            <input type="hidden" name="original" value="{{ request.path }}">  <!-- Store current page -->
+            <textarea name="comment_text" class="form-control me-2 text-dark border-0" placeholder="Write your comment..." required rows="1" style="resize: none; "></textarea>
+            <button type="submit" class="btn btn-primary fw-bold">Submit</button>
+        </form>
+    </div>
+</div>
+
+<!-- Include the comments modal for this post -->
+{% include 'comments.html' with post=post %}
+
+{% endblock %}

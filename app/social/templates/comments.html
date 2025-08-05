@@ -1,0 +1,66 @@
+{% load static %}
+{% load markdownify %}
+
+
+<!-- Comment Modal -->
+<div class="modal fade" id="commentModal-{{ post.id }}" tabindex="-1" aria-labelledby="commentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="commentModalLabel">Comments for {{ post.title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body d-flex flex-column">
+        <!-- Display Comments -->
+        <div class="comments-list flex-grow-1 overflow-auto mb-3">
+            {% for comment in post.post_comments.all %}
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            {% if comment.author.profile_image_url %}
+                                <img src="{{ comment.author.profile_image_url }}" 
+                                alt="User" 
+                                class="comment-img me-2"
+                                onerror="this.src='https://35bff.yeg.rac.sh/static/images/default-profile.png'; this.onerror='';">
+                            {% else %}
+                                <img src="{% static 'default-profile.png' %}" alt="User" class="comment-img me-2">
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0">{{ comment.author.display_name }}</h6>
+                                <small class="text-muted">{{ comment.published }}</small>
+                            </div>
+                        </div>
+                        <!-- Render Markdown if content_type is text/markdown -->
+                        {% if comment.content_type == 'text/markdown' %}
+                            <div class="markdown-content">
+                                {{ comment.comment|markdownify }}
+                            </div>
+                        {% else %}
+                            <p class="mb-0">{{ comment.comment }}</p>
+                        {% endif %}
+                        <!-- Like Comment Button -->
+                        <form method="post" action="{% url 'like_item' item_uuid=comment.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 6px;">
+                                <i class="bi bi-hand-thumbs-up" style="font-size: 0.75rem;"></i> Like <span class="badge" style="background-color: #5dade2; color: white; font-size: 0.65rem; padding: 0.15em 0.4em;">{{ comment.likes.count }}</span>
+                            </button>
+
+                        </form>
+                    </div>
+                </div>
+            {% empty %}
+                <p>Be the first one to comment!</p>
+            {% endfor %}
+        </div>
+
+        <!-- Comment Form (at the bottom) -->
+        <form method="post" action="{% url 'add_comment' post_id=post.id %}" class="d-flex flex-column">
+            {% csrf_token %}
+            <input type="hidden" name="original" value="{{ request.path }}">  <!-- Store current page -->
+            <textarea name="comment_text" class="form-control mb-2" placeholder="Write a comment..." required rows="3"></textarea>
+            <button type="submit" class="btn btn-primary align-self-end">Submit</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

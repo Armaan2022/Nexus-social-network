@@ -1,0 +1,65 @@
+---
+
+services:
+  socialapp:
+    container_name: socialapp
+    image: socialapp:latest
+    build: ./app
+    command: >
+      sh -c "python manage.py makemigrations --noinput &&
+             python manage.py migrate --noinput &&
+             gunicorn socialNetwork.wsgi:application --bind 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    networks:
+      - app-network
+    dns:
+      - 8.8.8.8  # Google DNS
+      - 1.1.1.1  # Cloudflare DNS
+
+  postgres:
+    container_name: postgres
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env.db
+    networks:
+      - app-network
+  
+  caddy:
+    container_name: caddy
+    image: caddy:latest
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./app/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - socialapp
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 2001:db8::/64
+          gateway: 2001:db8::1
+
+
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

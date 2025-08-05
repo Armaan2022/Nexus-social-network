@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4 mx-1">Followers</h2>
+
+{% if follower_authors %}
+    {% for author in follower_authors %}
+    <div class="card post-card mb-4 p-3">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <img src="{% if author.profile_image_url %}{{ author.profile_image_url }}{% else %}https://35bff.yeg.rac.sh/static/images/default-profile.png{% endif %}" 
+                        alt="{{ author.display_name }}" 
+                        class="post-img me-3 rounded-circle"
+                        onerror="this.src='https://35bff.yeg.rac.sh/static/images/default-profile.png'; this.onerror='';">
+
+                    <div>
+                        <a href="{% url 'author_profile' id=author.id %}" class="text-decoration-none text-dark">
+                            <h5 class="mb-0 fw-bold">{{ author.display_name }}</h5>
+                        </a>
+                        <small class="text-muted">
+                            Joined: {{ author.user.date_joined|date:"F j, Y" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No followers found.</p>
+{% endif %}
+
+{% endblock %}

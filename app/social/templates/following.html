@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <!-- Author Search Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="card-body">
+                    <h4 class="mb-3">Find Authors</h4>
+                    <form action="{% url 'search_authors' %}" method="get" class="d-flex">
+                        <input type="text" name="q" class="form-control me-2" placeholder="Search by name or username" 
+                               aria-label="Search" value="{{ request.GET.q|default:'' }}">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+<h2 class="mb-4 mx-1">Following</h2>
+
+{% if following_data %}
+    {% for data in following_data %}
+        {% with author=data.author follow_id=data.follow_id %}
+        <div class="card post-card mb-4 p-3">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <img src="{% if author.profile_image_url %}{{ author.profile_image_url }}{% else %}https://35bff.yeg.rac.sh/static/images/default-profile.png{% endif %}" 
+                        alt="{{ author.display_name }}" 
+                        class="post-img me-3 rounded-circle"
+                        onerror="this.src='https://35bff.yeg.rac.sh/static/images/default-profile.png'; this.onerror='';">
+
+                    <div class="flex-grow-1">
+                        <a href="{% url 'author_profile' id=author.id %}" class="text-decoration-none text-dark">
+                            <h5 class="mb-0 fw-bold">{{ author.display_name|default:"Unnamed Author" }}</h5>
+                        </a>
+                        <small class="text-muted">
+                            Joined: {{ author.user.date_joined|date:"F j, Y" }}
+                        </small>
+                    </div>
+                    <div>
+                        <form action="{% url 'unfollow' follow_id=follow_id %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn bg-danger text-light">Unfollow</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+    {% endfor %}
+{% else %}
+    <p>You are not following anyone yet.</p>
+{% endif %}
+
+{% endblock %}

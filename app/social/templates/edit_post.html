@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">Edit Post</h2>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" name="title" id="title" class="form-control" value="{{ post.title }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="content_type" class="form-label">Content Type</label>
+        <select name="content_type" id="content_type" class="form-select">
+            <option value="text/plain" {% if post.contentType == 'text/plain' %}selected{% endif %}>Plain Text</option>
+            <option value="text/markdown" {% if post.contentType == 'text/markdown' %}selected{% endif %}>Markdown</option>
+            <option value="image/png;base64" {% if post.contentType == 'image/png;base64' %}selected{% endif %}>PNG Image</option>
+            <option value="image/jpeg;base64" {% if post.contentType == 'image/jpeg;base64' %}selected{% endif %}>JPEG Image</option>
+            <option value="application/base64" {% if post.contentType == 'application/base64' %}selected{% endif %}>Base64 Image</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="content" class="form-label">Content</label>
+        <textarea name="content" id="content" class="form-control" rows="4">{{ post.content }}</textarea>
+    </div>
+
+    <div class="mb-3">
+        <label for="visibility" class="form-label">Visibility</label>
+        <select name="visibility" id="visibility" class="form-select">
+            <option value="PUBLIC" {% if post.visibility == 'PUBLIC' %}selected{% endif %}>Public</option>
+            <option value="FRIENDS" {% if post.visibility == 'FRIENDS' %}selected{% endif %}>Friends Only</option>
+            <option value="UNLISTED" {% if post.visibility == 'UNLISTED' %}selected{% endif %}>Unlisted</option>
+        </select>
+    </div>
+
+    <div class="text-center">
+        <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+    </div>
+</form>
+
+{% endblock %}
